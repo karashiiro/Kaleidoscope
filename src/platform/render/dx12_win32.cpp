@@ -53,7 +53,7 @@ void WaitForLastSubmittedFrame();
 FrameContext* WaitForNextFrameResources();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-int ImGuiPlatformInit()
+int NativePlatformInit()
 {
 	// Create application window
 	//ImGui_ImplWin32_EnableDpiAwareness();
@@ -122,7 +122,7 @@ int ImGuiPlatformInit()
 	return 0;
 }
 
-int ImGuiOnUpdatePreRender(bool &done)
+int NativeOnUpdatePreRender(bool &done)
 {
 	// Poll and handle messages (inputs, window resize, etc.)
 	// You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -148,7 +148,7 @@ int ImGuiOnUpdatePreRender(bool &done)
 	return 0;
 }
 
-int ImGuiOnUpdatePostRender()
+int NativeOnUpdatePostRender()
 {
 	FrameContext* frameCtx = WaitForNextFrameResources();
 	UINT backBufferIdx = g_pSwapChain->GetCurrentBackBufferIndex();
@@ -197,7 +197,7 @@ int ImGuiOnUpdatePostRender()
 	return 0;
 }
 
-int ImGuiPlatformShutdown()
+int NativePlatformShutdown()
 {
 	WaitForLastSubmittedFrame();
 

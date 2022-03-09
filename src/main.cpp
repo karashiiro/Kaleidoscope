@@ -1,8 +1,7 @@
-#include "core/Application.h"
+#include <imgui.h>
 
-#ifdef WIN32
-#include "platform/dx12_win32.h"
-#endif
+#include "core/Application.h"
+#include "platform/render.h"
 
 int main(int, char**)
 {

@@ -44,7 +44,7 @@ endif()
 
 # ---- Create executable ----
 
-add_executable(${PROJECT_NAME} src/main.cpp src/Application.cpp src/Application.h)
+add_executable(${PROJECT_NAME} src/main.cpp src/core/Application.cpp src/core/Application.h src/platform/dx12_win32.cpp src/platform/dx12_win32.h)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23)
 
 # being a cross-platform target, we enforce standards conformance on MSVC

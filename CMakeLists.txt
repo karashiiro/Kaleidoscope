@@ -24,6 +24,7 @@ include(cmake/CPM.cmake)
 
 CPMAddPackage(
         NAME imgui
+        VERSION 1.87
         GITHUB_REPOSITORY ocornut/imgui
         GIT_TAG 1ee252772ae9c0a971d06257bb5c89f628fa696a
         DOWNLOAD_ONLY YES
@@ -42,13 +43,19 @@ if(imgui_ADDED)
     endif()
 endif()
 
+CPMAddPackage("gh:nothings/stb#af1a5bc352164740c1cc1354942b1c6b72eacb8a")
+if (stb_ADDED)
+    add_library(stb INTERFACE)
+    target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+endif()
+
 # ---- Create executable ----
 
-add_executable(${PROJECT_NAME} src/main.cpp src/core/Application.cpp src/core/Application.h src/platform/render/dx12_win32.cpp src/platform/render/dx12_win32.h src/platform/render.cpp src/platform/render.h)
+add_executable(${PROJECT_NAME} src/main.cpp src/core/Application.cpp src/core/Application.h src/platform/render/dx12_win32.cpp src/platform/render/dx12_win32.h src/platform/render.cpp src/platform/render.h src/util/stb_init.cpp)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23)
 
 # being a cross-platform target, we enforce standards conformance on MSVC
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
 
 # Link dependencies
-target_link_libraries(${PROJECT_NAME} PRIVATE d3d12.lib d3dcompiler.lib dxgi.lib imgui)
+target_link_libraries(${PROJECT_NAME} PRIVATE d3d12.lib d3dcompiler.lib dxgi.lib imgui stb)

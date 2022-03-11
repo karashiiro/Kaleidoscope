@@ -31,16 +31,19 @@ CPMAddPackage(
 )
 if(imgui_ADDED)
     file(GLOB imgui_SOURCES ${imgui_SOURCE_DIR}/*.cpp)
-    # Platform-dependent
-    file(GLOB imgui_BACKEND_SOURCES ${imgui_SOURCE_DIR}/backends/imgui_impl_win32.cpp ${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.cpp)
+
+    if (WIN32)
+        file(GLOB imgui_BACKEND_SOURCES ${imgui_SOURCE_DIR}/backends/imgui_impl_win32.cpp ${imgui_SOURCE_DIR}/backends/imgui_impl_dx11.cpp)
+    endif ()
+
     add_library(imgui ${imgui_SOURCES} ${imgui_BACKEND_SOURCES})
     target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 
-    if(WIN32)
-        if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    if (WIN32)
+        if (CMAKE_SIZEOF_VOID_P EQUAL 4)
             target_compile_definitions(imgui PUBLIC ImTextureID=ImU64)
-        endif()
-    endif()
+        endif ()
+    endif ()
 endif()
 
 CPMAddPackage("gh:nothings/stb#af1a5bc352164740c1cc1354942b1c6b72eacb8a")
@@ -51,11 +54,14 @@ endif()
 
 # ---- Create executable ----
 
-add_executable(${PROJECT_NAME} src/main.cpp src/core/Application.cpp src/core/Application.h src/platform/render/dx12_win32.cpp src/platform/render/dx12_win32.h src/platform/render.cpp src/platform/render.h src/util/stb_init.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/core/Application.cpp src/core/Application.h src/platform/render/win32_dx11.cpp src/platform/render/win32_dx11.h src/platform/render.cpp src/platform/render.h src/util/stb_init.cpp)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23)
 
 # being a cross-platform target, we enforce standards conformance on MSVC
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
 
 # Link dependencies
-target_link_libraries(${PROJECT_NAME} PRIVATE d3d12.lib d3dcompiler.lib dxgi.lib imgui stb)
+if (WIN32)
+    set(PLATFORM_LINK_LIBRARIES d3d11.lib)
+endif ()
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PLATFORM_LINK_LIBRARIES} imgui stb)

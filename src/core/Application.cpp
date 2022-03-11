@@ -1,6 +1,13 @@
 #include "Application.h"
+#include "../platform/render.h"
 
 #include <imgui.h>
+
+Application::Application()
+{
+	bool ret = LoadTextureFromFile("../ok.png", &tex, &tex_width, &tex_height);
+	IM_ASSERT(ret);
+}
 
 void Application::OnUpdate()
 {
@@ -16,7 +23,7 @@ void Application::OnUpdate()
 		ImGui::Checkbox("Demo Window", &show_demo_window);// Edit bools storing our window open/close state
 		ImGui::Checkbox("Another Window", &show_another_window);
 
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);          // Edit 1 float using a slider from 0.0f to 1.0f
+		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);// Edit 1 float using a slider from 0.0f to 1.0f
 
 		if (ImGui::Button("Button"))// Buttons return true when clicked (most widgets return true when edited/activated)
 			counter++;
@@ -24,6 +31,14 @@ void Application::OnUpdate()
 		ImGui::Text("counter = %d", counter);
 
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+	}
+
+	{
+		ImGui::Begin("DirectX11 Texture Test");
+		ImGui::Text("pointer = %p", tex);
+		ImGui::Text("size = %d x %d", tex_width, tex_height);
+		ImGui::Image(tex, ImVec2(static_cast<float>(tex_width), static_cast<float>(tex_height)));
 		ImGui::End();
 	}
 

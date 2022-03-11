@@ -1,25 +1,30 @@
 #include "render.h"
 
 #ifdef WIN32
-#include "render/dx12_win32.h"
+#include "render/win32_dx11.h"
 #endif
 
 int ImGuiPlatformInit()
 {
-	NativePlatformInit();
+	return NativePlatformInit();
 }
 
 int ImGuiOnUpdatePreRender(bool &done)
 {
-	NativeOnUpdatePreRender(done);
+	return NativeOnUpdatePreRender(done);
 }
 
 int ImGuiOnUpdatePostRender()
 {
-	NativeOnUpdatePostRender();
+	return NativeOnUpdatePostRender();
 }
 
 int ImGuiPlatformShutdown()
 {
-	NativePlatformShutdown();
+	return NativePlatformShutdown();
+}
+
+bool LoadTextureFromFile(const char* filename, void** out_tex, int* out_width, int* out_height)
+{
+	return NativeLoadTextureFromFile(filename, out_tex, out_width, out_height);
 }

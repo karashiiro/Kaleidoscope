@@ -24,7 +24,17 @@ int ImGuiPlatformShutdown()
 	return NativePlatformShutdown();
 }
 
-bool LoadTextureFromFile(const char* filename, void** out_tex, int* out_width, int* out_height)
+bool LoadTextureFromFile(const char* filename, ImTextureID* out_tex, int* out_width, int* out_height)
 {
 	return NativeLoadTextureFromFile(filename, out_tex, out_width, out_height);
+}
+
+bool LoadTextureFromMat(const cv::Mat& mat, ImTextureID* out_tex, int* out_width, int* out_height)
+{
+	return NativeLoadTextureFromMat(mat, out_tex, out_width, out_height);
+}
+
+bool FreeTexture(ImTextureID* tex)
+{
+	return NativeFreeTexture(tex);
 }

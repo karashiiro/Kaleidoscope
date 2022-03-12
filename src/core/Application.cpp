@@ -1,31 +1,64 @@
 #include "Application.h"
+
 #include "../platform/render.h"
+#include <cassert>
+#include <mutex>
 
-#include <imgui.h>
-
-Application::Application()
+void Application::Initialize()
 {
-	bool ret = LoadTextureFromFile("../ok.png", &tex, &tex_width, &tex_height);
-	IM_ASSERT(ret);
+	std::thread camera_thread(&Application::CameraThreadStart, this);
+	camera_thread.detach();
+
+	assert(LoadTextureFromFile("../ok.png", &tex, &tex_width, &tex_height));
 }
 
-void Application::OnUpdate()
+void Application::PreRender()
 {
-	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+	// Set when a new camera frame is ready
+	if (camera_frame_expired)
+	{
+		// Set if a camera frame is loaded (initially false)
+		if (camera_texture_loaded)
+		{
+			FreeTexture(&camera_tex);
+			camera_texture_loaded = false;
+		}
+
+		{
+			// Get in and out of this load procedure ASAP
+			std::shared_lock lock(camera_frame_mtx);
+			assert(LoadTextureFromMat(camera_frame, &camera_tex, &camera_tex_width, &camera_tex_height));
+		}
+
+		// Our current texture is safe to use
+		camera_frame_expired = false;
+		camera_texture_loaded = true;
+	}
+}
+
+void Application::Render()
+{
+	// Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
 	if (show_demo_window)
 		ImGui::ShowDemoWindow(&show_demo_window);
 
-	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+	// Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
 	{
-		ImGui::Begin("Hello, world!");// Create a window called "Hello, world!" and append into it.
+		// Create a window called "Hello, world!" and append into it.
+		ImGui::Begin("Hello, world!");
 
-		ImGui::Text("This is some useful text.");         // Display some text (you can use a format strings too)
-		ImGui::Checkbox("Demo Window", &show_demo_window);// Edit bools storing our window open/close state
+		// Display some text (you can use a format strings too)
+		ImGui::Text("This is some useful text.");
+
+		// Edit booleans storing our window open/close state
+		ImGui::Checkbox("Demo Window", &show_demo_window);
 		ImGui::Checkbox("Another Window", &show_another_window);
 
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);// Edit 1 float using a slider from 0.0f to 1.0f
+		// Edit 1 float using a slider from 0.0f to 1.0f
+		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
 
-		if (ImGui::Button("Button"))// Buttons return true when clicked (most widgets return true when edited/activated)
+		// Buttons return true when clicked (most widgets return true when edited/activated)
+		if (ImGui::Button("Button"))
 			counter++;
 		ImGui::SameLine();
 		ImGui::Text("counter = %d", counter);
@@ -42,13 +75,55 @@ void Application::OnUpdate()
 		ImGui::End();
 	}
 
-	// 3. Show another simple window.
+	{
+		ImGui::Begin("Camera");
+
+		if (camera_texture_loaded)
+		{
+			ImGui::Image(camera_tex, ImVec2(static_cast<float>(camera_tex_width), static_cast<float>(camera_tex_height)));
+		}
+
+		ImGui::End();
+	}
+
 	if (show_another_window)
 	{
-		ImGui::Begin("Another Window", &show_another_window);// Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+		ImGui::Begin("Another Window", &show_another_window);
 		ImGui::Text("Hello from another window!");
 		if (ImGui::Button("Close Me"))
 			show_another_window = false;
 		ImGui::End();
+	}
+}
+
+void Application::Shutdown()
+{
+	done = true;
+
+	if (tex != nullptr)
+	{
+		FreeTexture(&tex);
+	}
+}
+
+void Application::CameraThreadStart()
+{
+	cv::Mat camera_frame_temp;
+	cv::VideoCapture camera(0);
+	while (!done)
+	{
+		camera >> camera_frame_temp;
+		cv::cvtColor(camera_frame_temp, camera_frame_temp, CV_BGR2RGBA);
+
+		{
+			// This probably has more computational overhead than just
+			// working on one locked matrix, but working on a single matrix
+			// introduces lock contention issues that tank our frame rate.
+			std::unique_lock lock(camera_frame_mtx);
+			camera_frame = camera_frame_temp;
+		}
+
+		// Notify that the frame texture needs to be refreshed
+		camera_frame_expired = true;
 	}
 }

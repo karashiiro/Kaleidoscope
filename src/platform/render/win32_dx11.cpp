@@ -152,7 +152,7 @@ int NativePlatformShutdown()
 	return 0;
 }
 
-bool NativeLoadTextureFromFile(const char* filename, void** out_srv, int* out_width, int* out_height)
+bool NativeLoadTextureFromFile(const char* filename, ImTextureID* out_srv, int* out_width, int* out_height)
 {
 	// Load from disk into a raw RGBA buffer
 	int image_width = 0;
@@ -195,6 +195,91 @@ bool NativeLoadTextureFromFile(const char* filename, void** out_srv, int* out_wi
 	*out_height = image_height;
 	stbi_image_free(image_data);
 
+	return true;
+}
+
+// https://stackoverflow.com/a/26685567/14226597
+// OpenCV matrices can be stored contiguously or non-contiguously, and can have arbitrary
+// pixel sizes, so I'm just borrowing this implementation that considers some of that already.
+void CopyMatToVec(const cv::Mat& mat, std::vector<uint8_t>& buf)
+{
+	if (mat.isContinuous())
+	{
+		buf.assign(reinterpret_cast<uint8_t*>(mat.data), reinterpret_cast<uint8_t*>(mat.data) + mat.total() * mat.channels());
+	}
+	else
+	{
+		for (int i = 0; i < mat.rows; ++i)
+		{
+			buf.insert(buf.end(), mat.ptr<uint8_t>(i), mat.ptr<uint8_t>(i) + mat.cols * mat.channels());
+		}
+	}
+}
+
+bool NativeLoadTextureFromMat(const cv::Mat& mat, ImTextureID* out_srv, int* out_width, int* out_height)
+{
+	auto image_width = mat.cols;
+	auto image_height = mat.rows;
+
+	auto image_channels = mat.channels();
+	if (image_channels != 4)
+	{
+		return false;
+	}
+
+	// Copy the matrix into a contiguous memory buffer
+	std::vector<uint8_t> buf;
+	if (mat.type() == CV_8UC4)
+	{
+		CopyMatToVec(mat, buf);
+	}
+	else
+	{
+		cv::Mat copy;
+		mat.convertTo(copy, CV_8UC4);
+		CopyMatToVec(copy, buf);
+	}
+
+	// Create texture
+	D3D11_TEXTURE2D_DESC desc;
+	ZeroMemory(&desc, sizeof(desc));
+	desc.Width = image_width;
+	desc.Height = image_height;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags = 0;
+
+	ID3D11Texture2D* pTexture = nullptr;
+	D3D11_SUBRESOURCE_DATA subResource;
+	subResource.pSysMem = &buf[0];
+	subResource.SysMemPitch = desc.Width * 4;
+	subResource.SysMemSlicePitch = 0;
+	g_pd3dDevice->CreateTexture2D(&desc, &subResource, &pTexture);
+
+	// Create texture view
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	ZeroMemory(&srvDesc, sizeof(srvDesc));
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = desc.MipLevels;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	g_pd3dDevice->CreateShaderResourceView(pTexture, &srvDesc, reinterpret_cast<ID3D11ShaderResourceView**>(out_srv));
+	pTexture->Release();
+
+	*out_width = image_width;
+	*out_height = image_height;
+
+	return true;
+}
+
+bool NativeFreeTexture(void** srv)
+{
+	(*reinterpret_cast<ID3D11ShaderResourceView**>(srv))->Release();
+	(*srv) = nullptr;
 	return true;
 }
 

@@ -1,5 +1,4 @@
 #include <imgui.h>
-#include <opencv2/opencv.hpp>
 
 #include "core/Application.h"
 #include "platform/render.h"
@@ -10,9 +9,8 @@ int main(int, char**)
 	if (ImGuiPlatformInit() != 0)
 		return 1;
 
-	cv::Mat hello;
-
 	Application app;
+	app.Initialize();
 
 	// Main loop
 	bool done = false;
@@ -21,14 +19,20 @@ int main(int, char**)
 		if (ImGuiOnUpdatePreRender(done) != 0)
 			return 1;
 
-		app.OnUpdate();
+		app.PreRender();
+
+		app.Render();
 		ImGui::Render();
 
 		if (ImGuiOnUpdatePostRender() != 0)
 			return 1;
 	}
 
+	app.Shutdown();
+
 	// Perform platform-specific cleanup
 	if (ImGuiPlatformShutdown() != 0)
 		return 1;
+
+	return 0;
 }

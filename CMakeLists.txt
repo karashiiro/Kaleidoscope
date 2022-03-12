@@ -64,4 +64,5 @@ target_compile_options(${PROJECT_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>
 if (WIN32)
     set(PLATFORM_LINK_LIBRARIES d3d11.lib)
 endif ()
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PLATFORM_LINK_LIBRARIES} imgui stb)
+find_package(OpenCV CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PLATFORM_LINK_LIBRARIES} opencv_core imgui stb)

@@ -167,7 +167,8 @@ void Application::CameraThreadStart()
 
 			// This probably has more computational overhead than just
 			// working on one locked matrix, but working on a single matrix
-			// introduces lock contention issues that tank our frame rate.
+			// requires writing code that introduces lock contention issues
+			// that tank our frame rate.
 			std::unique_lock lock(camera_frame_mtx);
 			camera_frame = camera_frame_out;
 		}

@@ -30,6 +30,6 @@ private:
 	bool show_demo_window = true;
 	bool show_another_window = false;
 	bool done = false;
-	float f = 0.0f;
+	float float_test = 0.0f;
 	int counter = 0;
 };
